@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("Entitlements for OpenShift builds operator", Label("e2e"), Label("entitlements"), func() {
 
-	BeforeEach(func() {
+	AfterEach(func() {
 		podToDel := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "openshift-config-managed",

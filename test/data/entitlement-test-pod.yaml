@@ -11,6 +11,13 @@ spec:
         - /bin/sh
         - -c
         - |
+          echo "Checking if baseos repo is enabled..."
+          output=$(subscription-manager repos --list-enabled 2>&1)
+          echo "$output" | grep -q -e '^Repo ID: .*baseos'
+          if [ $? -ne 0 ]; then
+             echo "baseos repo is not enabled..."
+             exit 1
+          fi
           echo "Installing kernel-devel..."
           output=$(dnf install -y kernel-devel 2>&1)
           if echo "$output" | grep "Error"; then
