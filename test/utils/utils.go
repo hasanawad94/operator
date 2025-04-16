@@ -17,12 +17,18 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:golint,revive
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -137,4 +143,29 @@ func GetProjectDir() (string, error) {
 	}
 	wd = strings.Replace(wd, "/test/e2e", "", -1)
 	return wd, nil
+}
+
+// ApplyResourceFromFile reads a YAML file, decodes it into a Kubernetes resource, and applies it to the cluster.
+func ApplyResourceFromFile(ctx context.Context, kubeClient client.Client, filePath string) error {
+	// Read the YAML file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %w", filePath, err)
+	}
+
+	// Decode YAML into an unstructured object
+	obj := &unstructured.Unstructured{}
+	err = yaml.Unmarshal(data, obj)
+	if err != nil {
+		return fmt.Errorf("failed to decode YAML: %w", err)
+	}
+
+	// Apply the object
+	err = kubeClient.Create(ctx, obj)
+	if err != nil {
+		if errors.IsAlreadyExists(err) { // Use the correct `errors` package
+			err = kubeClient.Update(ctx, obj)
+		}
+	}
+	return err
 }

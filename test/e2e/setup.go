@@ -29,6 +29,10 @@ import (
 	operatorv1alpha1 "github.com/redhat-openshift-builds/operator/api/v1alpha1"
 	"github.com/redhat-openshift-builds/operator/test/setup"
 	shpoperatorv1alpha1 "github.com/shipwright-io/operator/api/v1alpha1"
+    
+	buildv1 "github.com/openshift/api/build/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -42,6 +46,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	Expect(extv1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(shpoperatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
+	Expect(buildv1.AddToScheme(scheme)).To(Succeed(), "adding OpenShift BuildConfig types to scheme")
 
 	ctrl.SetLogger(GinkgoLogr)
 	config, err := ctrl.GetConfig()
@@ -55,6 +60,15 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 		mgr = setup.NewOperatorManager(kubeClient)
 		err = mgr.InstallBuildsForOpenShift(ctx)
 		Expect(err).NotTo(HaveOccurred(), "ensure Builds for OpenShift installed")
+	})
+
+	By("Creating the builds-test namespace", func() {
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "builds-test",
+			},
+		}
+		_= kubeClient.Create(ctx, ns)
 	})
 
 })
