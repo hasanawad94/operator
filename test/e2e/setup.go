@@ -31,6 +31,7 @@ import (
 
 	operatorv1alpha1 "github.com/redhat-openshift-builds/operator/api/v1alpha1"
 	"github.com/redhat-openshift-builds/operator/test/setup"
+	"github.com/redhat-openshift-builds/operator/test/utils"
 	buildv1beta1 "github.com/shipwright-io/build/pkg/apis/build/v1beta1"
 	shpoperatorv1alpha1 "github.com/shipwright-io/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +41,7 @@ import (
 var (
 	kubeClient client.Client
 	mgr        *setup.OperatorManager
+	projectDir string
 )
 
 var _ = BeforeSuite(func(ctx SpecContext) {
@@ -57,6 +59,10 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 		Scheme: scheme,
 	})
 	Expect(err).NotTo(HaveOccurred(), "setting up kubeClient")
+
+	By("Setting up project directory value")
+	projectDir, err = utils.GetProjectDir()
+	Expect(err).NotTo(HaveOccurred(), "getting project directory")
 
 	By("installing operators", func() {
 		mgr = setup.NewOperatorManager(kubeClient)
