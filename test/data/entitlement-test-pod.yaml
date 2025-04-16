@@ -7,7 +7,18 @@ spec:
   containers:
     - name: etc-pki-entitlement-test-container
       image: registry.access.redhat.com/ubi8/ubi
-      command: ["/bin/sh", "-c", "[ -n \"$(ls -1 /etc/pki/entitlement 2>/dev/null)\" ] || exit 1"]
+      command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Installing kernel-devel..."
+          output=$(dnf install -y kernel-devel 2>&1)
+          if echo "$output" | grep "Error"; then
+             echo "Error found during dnf install. Exiting with code 1"
+             exit 1
+          fi
+          echo "dnf install succeeded. Exiting with code 0."
+          exit 0
       volumeMounts:
         - name: secret-volume
           mountPath: /etc/pki/entitlement/

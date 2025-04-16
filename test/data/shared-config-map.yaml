@@ -1,0 +1,8 @@
+apiVersion: sharedresource.openshift.io/v1alpha1
+kind: SharedConfigMap
+metadata:
+  name: my-share-configmap
+spec:
+  configMapRef:
+    name: etc-pki-entitlement.crt
+    namespace: ent-test
