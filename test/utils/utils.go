@@ -25,7 +25,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2" //nolint:golint,revive
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -160,12 +159,33 @@ func ApplyResourceFromFile(ctx context.Context, kubeClient client.Client, filePa
 		return fmt.Errorf("failed to decode YAML: %w", err)
 	}
 
-	// Apply the object
-	err = kubeClient.Create(ctx, obj)
-	if err != nil {
-		if errors.IsAlreadyExists(err) { // Use the correct `errors` package
-			err = kubeClient.Update(ctx, obj)
-		}
+	// Creaate the resource
+	if err := kubeClient.Create(ctx, obj); err != nil {
+		return fmt.Errorf("failed to delete resource %s/%s (%s): %w",
+			obj.GetNamespace(), obj.GetName(), obj.GetKind(), err)
 	}
-	return err
+	return nil
+}
+
+// DeleteResourceFromFile reads a YAML file, decodes it into a Kubernetes resource, and deletes it from the cluster.
+func DeleteResourceFromFile(ctx context.Context, kubeClient client.Client, filePath string) error {
+	// Read the YAML file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %q: %w", filePath, err)
+	}
+
+	// Decode YAML into an unstructured object
+	obj := &unstructured.Unstructured{}
+	if err := yaml.Unmarshal(data, obj); err != nil {
+		return fmt.Errorf("failed to decode YAML for file %q: %w", filePath, err)
+	}
+
+	// Delete the resource
+	if err := kubeClient.Delete(ctx, obj); err != nil {
+		return fmt.Errorf("failed to delete resource %s/%s (%s): %w",
+			obj.GetNamespace(), obj.GetName(), obj.GetKind(), err)
+	}
+
+	return nil
 }

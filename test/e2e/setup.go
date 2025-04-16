@@ -17,6 +17,9 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2" //nolint:golint,revive
 	. "github.com/onsi/gomega"    //nolint:golint,revive
 
@@ -26,11 +29,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	buildv1 "github.com/openshift/api/build/v1"
 	operatorv1alpha1 "github.com/redhat-openshift-builds/operator/api/v1alpha1"
 	"github.com/redhat-openshift-builds/operator/test/setup"
+	buildv1beta1 "github.com/shipwright-io/build/pkg/apis/build/v1beta1"
 	shpoperatorv1alpha1 "github.com/shipwright-io/operator/api/v1alpha1"
-
-	buildv1 "github.com/openshift/api/build/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,6 +49,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	Expect(extv1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(shpoperatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
+	Expect(buildv1beta1.AddToScheme(scheme)).To(Succeed(), "adding build to scheme")
 	Expect(buildv1.AddToScheme(scheme)).To(Succeed(), "adding OpenShift BuildConfig types to scheme")
 
 	ctrl.SetLogger(GinkgoLogr)
@@ -68,7 +72,27 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 				Name: "builds-test",
 			},
 		}
-		_ = kubeClient.Create(ctx, ns)
+		Expect(kubeClient.Create(ctx, ns)).To(Succeed())
 	})
 
+})
+
+var _ = AfterSuite(func(ctx SpecContext) {
+	By("Tearing down the builds-test namespace", func() {
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "builds-test",
+			},
+		}
+		Expect(kubeClient.Delete(ctx, ns)).NotTo(HaveOccurred(), "failed to delete the builds-test namespace")
+		By("Waiting for the builds-test namespace to be fully deleted")
+		Eventually(func() error {
+			err := kubeClient.Get(ctx, client.ObjectKey{Name: "builds-test"}, ns)
+			if err != nil && client.IgnoreNotFound(err) == nil {
+				// Namespace no longer exists
+				return nil
+			}
+			return fmt.Errorf("namespace builds-test still exists")
+		}, 4*time.Minute, 10*time.Second).Should(Succeed(), "timed out waiting for namespace builds-test to be deleted")
+	})
 })
