@@ -29,7 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	buildv1 "github.com/openshift/api/build/v1"
 	operatorv1alpha1 "github.com/redhat-openshift-builds/operator/api/v1alpha1"
 	"github.com/redhat-openshift-builds/operator/test/setup"
 	buildv1beta1 "github.com/shipwright-io/build/pkg/apis/build/v1beta1"
@@ -50,7 +49,6 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(shpoperatorv1alpha1.AddToScheme(scheme)).To(Succeed(), "setting up kubeClient")
 	Expect(buildv1beta1.AddToScheme(scheme)).To(Succeed(), "adding build to scheme")
-	Expect(buildv1.AddToScheme(scheme)).To(Succeed(), "adding OpenShift BuildConfig types to scheme")
 
 	ctrl.SetLogger(GinkgoLogr)
 	config, err := ctrl.GetConfig()
