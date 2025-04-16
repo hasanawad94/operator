@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -11,11 +12,22 @@ import (
 
 	"github.com/redhat-openshift-builds/operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Entitlements for OpenShift builds operator", Label("e2e"), Label("entitlements"), func() {
 
-	//testNamespace := "builds-test"
+	BeforeEach(func() {
+		podToDel := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-config-managed",
+				Name:      "etc-pki-entitlement-test",
+			},
+		}
+		By("Cleaning up resources before each test")
+		_ = kubeClient.Delete(context.Background(), podToDel)
+	})
+
 	It("Should access entitled rhel content", func(ctx SpecContext) {
 		By("Ensure etc-pki-entitlement secret exists")
 		secret := &corev1.Secret{}
